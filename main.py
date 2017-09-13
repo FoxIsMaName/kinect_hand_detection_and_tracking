@@ -16,6 +16,10 @@ class BlobAnalysis:
     def __init__(self,contour):
         self.contour = contour
         self.contour_s = np.vstack(contour).squeeze()
+        self.id = -1
+    
+    def set_id(self,i):
+        self.id = i
     
     def contour_point(self):
         return np.array(self.contour_s).tolist()
@@ -64,6 +68,24 @@ class BlobAnalysis:
         else:
             return False
 
+    def isNear(self,ref):
+        (x1,y1) = self.centroid()
+        (x2,y2) = ref.centroid()
+        dist = math.hypot(x2 - x1, y2 - y1)
+        if dist < 120:
+            return True
+        else:
+            return False
+    
+    def isSame(self,ref):
+        if self.isNear(ref):
+            if self.area() < 1.5*ref.area() or self.area() < 0.5*ref.area():
+                return True
+            else:
+                return False
+        else:
+            return False
+
 def get_contours():
     (depth,_) = get_depth()
     depth = depth.astype(np.float32)
@@ -93,15 +115,29 @@ def pygame_init(xsize,ysize):
     screen = pygame.display.set_mode((xsize,ysize),pygame.RESIZABLE)
     pygame.font.init()
     global font
-    font = pygame.font.SysFont('Liberation Mono', 11)
+    font = pygame.font.SysFont('Liberation Mono', 20)
 
+blobs_temp = []
 def pygame_refresh():
     screen.fill(BLACK)
     blobs = []
+    global blobs_temp
+    old_id = []
+    for k in range(len(blobs_temp)):
+        old_id.append(blobs_temp[k].id)
     cs = get_contours()
     for i in range(len(cs)):
         blob = BlobAnalysis(cs[i])
+        if blobs_temp == []:
+            blob.set_id(i)
+        else:
+            for j in range(len(blobs_temp)):
+                if blob.isSame(blobs_temp[j]):
+                    blob.set_id(blobs_temp[j].id)
+            if blob.id == -1:
+                blob.set_id(max(old_id)+1)
         blobs.append(blob)
+    blobs_temp = blobs
     for blob in blobs:
         pygame.draw.lines(screen,GREEN,True,blob.convex_hull(),3)
         pygame.draw.lines(screen,YELLOW,True,blob.contour_point(),3)
@@ -109,13 +145,14 @@ def pygame_refresh():
         for tips in blob.convex_hull():
                 pygame.draw.circle(screen,PURPLE,tips,5)
         if blob.isHand():
-            blob_status = "THIS IS HAND!!!"
+            blob_status = "ID: %d >> THIS IS HAND!!!" % (blob.id)
         else:
-            blob_status = "Hull: %d Deflect90: %d" % (blob.approx_hull_count(),blob.deflect_count(90))
+            blob_status = "ID: %d Hull: %d Deflect90: %d" % (blob.id,blob.approx_hull_count(),blob.deflect_count(90))
         blob_status_render = font.render(blob_status, True, WHITE)
         screen.blit(blob_status_render, blob.centroid())
     pygame.display.set_caption('Kinect Tracking')
     pygame.display.flip()
+    return 1
 
 def main():
     pygame_init(640,480)
