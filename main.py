@@ -17,6 +17,8 @@ class BlobAnalysis:
         self.contour = contour
         self.contour_s = np.vstack(contour).squeeze()
         self.id = -1
+        self.isHand = False
+        self.check_isHand()
     
     def set_id(self,i):
         self.id = i
@@ -62,11 +64,11 @@ class BlobAnalysis:
                     count += 1
         return count
     
-    def isHand(self):
+    def check_isHand(self):
         if self.deflect_count(90) == 4 :
-            return True
+            self.isHand = True
         else:
-            return False
+            self.isHand = False
 
     def isNear(self,ref):
         (x1,y1) = self.centroid()
@@ -117,30 +119,54 @@ def pygame_init(xsize,ysize):
     global font
     font = pygame.font.SysFont('Liberation Mono', 20)
 
-buffer_size = 3
+blobs = []
+buffer_size = 20
 blobs_buffer = [[]] * buffer_size
 old_id = [[]] * buffer_size
+blobs_movement = {}
 
 def blobs_track(blob,i,n):
+    global blobs_movement
+    global blobs
     if blobs_buffer[n] == []:
         if n+1 < buffer_size:
             blobs_track(blob,i,n+1)
         else:
             blob.set_id(i)
+            blobs_movement[i] = [blob.centroid(),blob.centroid()]
     else:
         for j in range(len(blobs_buffer[n])):
             if blob.isSame(blobs_buffer[n][j]):
-                blob.set_id(blobs_buffer[n][j].id)
+                new_id = blobs_buffer[n][j].id
+                exist = False
+                for k in blobs:
+                    if k.id == new_id:
+                        exist = True
+                if exist:
+                    if n+1 < buffer_size:
+                        blobs_track(blob,i,n+1)
+                    else:
+                        new_id = 1
+                        for k in range(buffer_size):
+                            if max(old_id[k]or[0])+1 > new_id:
+                                new_id = max(old_id[k])+1
+                        blob.set_id(new_id)
+                        old_id[0].append(new_id)
+                        blobs_movement[new_id] = [blob.centroid(),blob.centroid()]
+                else:
+                    blob.set_id(new_id)
+                    blobs_movement[new_id].append(blob.centroid())
         if blob.id == -1:
             if n+1 < buffer_size:
                 blobs_track(blob,i,n+1)
             else:
                 new_id = 1
                 for k in range(buffer_size):
-                    if max(old_id[n])+1 > new_id:
-                        new_id = max(old_id[n])+1
+                    if max(old_id[k]or[0])+1 > new_id:
+                        new_id = max(old_id[k])+1
                 blob.set_id(new_id)
                 old_id[0].append(new_id)
+                blobs_movement[new_id] = [blob.centroid(),blob.centroid()]
     return blob
 
 def update_old_id():
@@ -152,9 +178,11 @@ def update_old_id():
 
 def pygame_refresh():
     screen.fill(BLACK)
+    global blobs
     blobs = []
     global blobs_buffer
     global old_id
+    global blobs_movement
     update_old_id()
     cs = get_contours()
     for i in range(len(cs)):
@@ -165,12 +193,13 @@ def pygame_refresh():
     blobs_buffer[1] = blobs_buffer[0]
     blobs_buffer[0] = blobs
     for blob in blobs:
+        pygame.draw.lines(screen,BLUE,False,blobs_movement[blob.id],1)
         pygame.draw.lines(screen,GREEN,True,blob.convex_hull(),3)
         pygame.draw.lines(screen,YELLOW,True,blob.contour_point(),3)
         pygame.draw.circle(screen,RED,blob.centroid(),10)
         for tips in blob.convex_hull():
                 pygame.draw.circle(screen,PURPLE,tips,5)
-        if blob.isHand():
+        if blob.isHand:
             blob_status = "ID: %d >> THIS IS HAND!!!" % (blob.id)
         else:
             blob_status = "ID: %d Hull: %d Deflect90: %d" % (blob.id,blob.approx_hull_count(),blob.deflect_count(90))
