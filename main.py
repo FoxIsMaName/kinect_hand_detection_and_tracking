@@ -81,14 +81,14 @@ class BlobAnalysis:
     
     def isSame(self,ref):
         if self.isNear(ref):
-            if self.area() < 1.5*ref.area() or self.area() < 0.5*ref.area():
+            if self.area() < 1.8*ref.area() or self.area() < 0.2*ref.area():
                 return True
             else:
                 return False
         else:
             return False
 
-def get_contours():
+def get_contours(xsize,ysize):
     (depth,_) = get_depth()
     depth = depth.astype(np.float32)
     depth = cv2.flip(depth, 1)
@@ -103,6 +103,7 @@ def get_contours():
     depth = cv2.dilate(depth, None, iterations=2)
     (_,BW) = cv2.threshold(depth, max_hand_depth, min_depth, cv2.THRESH_BINARY_INV)
     BW = cv2.convertScaleAbs(BW)
+    BW = cv2.resize(BW,(xsize,ysize))
     cs,_ = cv2.findContours(BW,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     cs_f = []
     for i in range(len(cs)):
@@ -156,6 +157,7 @@ def blobs_track(blob,i,n):
                 else:
                     blob.set_id(new_id)
                     blobs_movement[new_id].append(blob.centroid())
+                    #blobs_movement[new_id] = blobs_movement[new_id][-20:]
         if blob.id == -1:
             if n+1 < buffer_size:
                 blobs_track(blob,i,n+1)
@@ -176,7 +178,7 @@ def update_old_id():
         for j in range(len(blobs_buffer[i])):
             old_id[i].append(blobs_buffer[i][j].id)
 
-def pygame_refresh():
+def pygame_refresh(xsize,ysize):
     screen.fill(BLACK)
     global blobs
     blobs = []
@@ -184,14 +186,16 @@ def pygame_refresh():
     global old_id
     global blobs_movement
     update_old_id()
-    cs = get_contours()
+    cs = get_contours(xsize,ysize)
     for i in range(len(cs)):
         blob = BlobAnalysis(cs[i])
         blob = blobs_track(blob,i,0)
         blobs.append(blob)
-    blobs_buffer[2] = blobs_buffer[1]
-    blobs_buffer[1] = blobs_buffer[0]
-    blobs_buffer[0] = blobs
+    for i in range(buffer_size):
+        if i == 0:
+            blobs_buffer[i] = blobs
+        else:
+            blobs_buffer[i] = blobs_buffer[i-1]
     for blob in blobs:
         pygame.draw.lines(screen,BLUE,False,blobs_movement[blob.id],1)
         pygame.draw.lines(screen,GREEN,True,blob.convex_hull(),3)
@@ -210,8 +214,9 @@ def pygame_refresh():
     return 1
 
 def main():
-    pygame_init(640,480)
+    xsize,ysize = 640,480
+    pygame_init(xsize,ysize)
     while True:
-        pygame_refresh()
+        pygame_refresh(xsize,ysize)
 
 main()
