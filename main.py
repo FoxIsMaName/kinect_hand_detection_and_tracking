@@ -117,27 +117,53 @@ def pygame_init(xsize,ysize):
     global font
     font = pygame.font.SysFont('Liberation Mono', 20)
 
-blobs_temp = []
+buffer_size = 3
+blobs_buffer = [[]] * buffer_size
+old_id = [[]] * buffer_size
+
+def blobs_track(blob,i,n):
+    if blobs_buffer[n] == []:
+        if n+1 < buffer_size:
+            blobs_track(blob,i,n+1)
+        else:
+            blob.set_id(i)
+    else:
+        for j in range(len(blobs_buffer[n])):
+            if blob.isSame(blobs_buffer[n][j]):
+                blob.set_id(blobs_buffer[n][j].id)
+        if blob.id == -1:
+            if n+1 < buffer_size:
+                blobs_track(blob,i,n+1)
+            else:
+                new_id = 1
+                for k in range(buffer_size):
+                    if max(old_id[n])+1 > new_id:
+                        new_id = max(old_id[n])+1
+                blob.set_id(new_id)
+                old_id[0].append(new_id)
+    return blob
+
+def update_old_id():
+    global old_id
+    for i in range(buffer_size):
+        old_id[i] = []
+        for j in range(len(blobs_buffer[i])):
+            old_id[i].append(blobs_buffer[i][j].id)
+
 def pygame_refresh():
     screen.fill(BLACK)
     blobs = []
-    global blobs_temp
-    old_id = []
-    for k in range(len(blobs_temp)):
-        old_id.append(blobs_temp[k].id)
+    global blobs_buffer
+    global old_id
+    update_old_id()
     cs = get_contours()
     for i in range(len(cs)):
         blob = BlobAnalysis(cs[i])
-        if blobs_temp == []:
-            blob.set_id(i)
-        else:
-            for j in range(len(blobs_temp)):
-                if blob.isSame(blobs_temp[j]):
-                    blob.set_id(blobs_temp[j].id)
-            if blob.id == -1:
-                blob.set_id(max(old_id)+1)
+        blob = blobs_track(blob,i,0)
         blobs.append(blob)
-    blobs_temp = blobs
+    blobs_buffer[2] = blobs_buffer[1]
+    blobs_buffer[1] = blobs_buffer[0]
+    blobs_buffer[0] = blobs
     for blob in blobs:
         pygame.draw.lines(screen,GREEN,True,blob.convex_hull(),3)
         pygame.draw.lines(screen,YELLOW,True,blob.contour_point(),3)
