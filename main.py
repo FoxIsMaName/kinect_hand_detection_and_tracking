@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import math
 import pygame
+import time
 
 BLACK = (0,0,0)
 RED = (255,0,0)
@@ -16,72 +17,73 @@ class BlobAnalysis:
     def __init__(self,contour):
         self.contour = contour
         self.contour_s = np.vstack(contour).squeeze()
+        self.contour_point = self.get_contour_point()
+        self.centroid = self.get_centroid()
+        self.convex_hull = self.get_convex_hull()
+        self.approx_hull_count = self.get_approx_hull_count()
         self.id = -1
-        self.isHand = False
-        self.check_isHand()
+        self.area = cv2.contourArea(self.contour)
+        self.deflect_count_90 = self.get_deflect_count(90)
+        self.isHand = self.check_isHand()
     
     def set_id(self,i):
         self.id = i
     
-    def contour_point(self):
+    def get_contour_point(self):
         return np.array(self.contour_s).tolist()
     
-    def area(self):
-        return cv2.contourArea(self.contour)
-    
-    def centroid(self):
+    def get_centroid(self):
         m = cv2.moments(self.contour)
         cX = int(m['m10'] / m['m00'])
         cY = int(m['m01'] / m['m00'])
         return (cX, cY)
     
-    def convex_hull(self):
+    def get_convex_hull(self):
         convexHull = cv2.convexHull(self.contour)
         epsilon = 0.015*cv2.arcLength(convexHull,True)
         approx = cv2.approxPolyDP(convexHull,epsilon,True)
         approx = np.vstack(approx).squeeze()
         return np.array(approx).tolist()
     
-    def approx_hull_count(self):
-        approx = self.convex_hull()
+    def get_approx_hull_count(self):
+        approx = self.convex_hull
         return len(approx)
     
-    def deflect_count(self,max_angle):
+    def get_deflect_count(self,max_angle):
         count = 0
-        if self.approx_hull_count() >= 3:
-            hull = cv2.convexHull(self.contour_s,returnPoints = False)
-            defects = cv2.convexityDefects(self.contour_s, hull)
-            for i in range(defects.shape[0]):
-                s,e,f,d = defects[i,0]
-                start = self.contour_s[s]
-                end = self.contour_s[e]
-                far = self.contour_s[f]
-                a = math.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
-                b = math.sqrt((far[0] - start[0])**2 + (far[1] - start[1])**2)
-                c = math.sqrt((end[0] - far[0])**2 + (end[1] - far[1])**2)
-                angle = math.acos((b**2 + c**2 - a**2)/(2*b*c)) * 57
-                if angle <= max_angle:
-                    count += 1
+        hull = cv2.convexHull(self.contour,returnPoints = False)
+        defects = cv2.convexityDefects(self.contour, hull)
+        for i in range(defects.shape[0]):
+            s,e,f,d = defects[i,0]
+            start = self.contour_s[s]
+            end = self.contour_s[e]
+            far = self.contour_s[f]
+            a = math.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
+            b = math.sqrt((far[0] - start[0])**2 + (far[1] - start[1])**2)
+            c = math.sqrt((end[0] - far[0])**2 + (end[1] - far[1])**2)
+            angle = math.acos((b**2 + c**2 - a**2)/(2*b*c)) * 57
+            if angle <= max_angle:
+                count += 1
         return count
     
     def check_isHand(self):
-        if self.deflect_count(90) == 4 :
-            self.isHand = True
+        if self.deflect_count_90 == 4 :
+            return True
         else:
-            self.isHand = False
+            return False
 
     def isNear(self,ref):
-        (x1,y1) = self.centroid()
-        (x2,y2) = ref.centroid()
+        (x1,y1) = self.centroid
+        (x2,y2) = ref.centroid
         dist = math.hypot(x2 - x1, y2 - y1)
-        if dist < 120:
+        if dist < 150:
             return True
         else:
             return False
     
     def isSame(self,ref):
         if self.isNear(ref):
-            if self.area() < 1.8*ref.area() or self.area() < 0.2*ref.area():
+            if self.area < 1.5*ref.area or self.area < 0.1*ref.area:
                 return True
             else:
                 return False
@@ -92,15 +94,15 @@ def get_contours(xsize,ysize):
     (depth,_) = get_depth()
     depth = depth.astype(np.float32)
     depth = cv2.flip(depth, 1)
+    #depth = cv2.GaussianBlur(depth, (5,5), 0)
+    #depth = cv2.erode(depth, None, iterations=1)
+    #depth = cv2.dilate(depth, None, iterations=1)
     min_depth = 400
     min_hand_depth = np.amin(depth)
-    hand_depth = 120
+    hand_depth = 100
     max_hand_depth = min_hand_depth + hand_depth
     if max_hand_depth > 700 :
         max_hand_depth = 700
-    depth = cv2.GaussianBlur(depth, (5,5), 0)
-    depth = cv2.erode(depth, None, iterations=2)
-    depth = cv2.dilate(depth, None, iterations=2)
     (_,BW) = cv2.threshold(depth, max_hand_depth, min_depth, cv2.THRESH_BINARY_INV)
     BW = cv2.convertScaleAbs(BW)
     BW = cv2.resize(BW,(xsize,ysize))
@@ -112,29 +114,21 @@ def get_contours(xsize,ysize):
     del depth,BW
     return cs_f
 
-def pygame_init(xsize,ysize):
-    pygame.init()
-    global screen
-    screen = pygame.display.set_mode((xsize,ysize),pygame.RESIZABLE)
-    pygame.font.init()
-    global font
-    font = pygame.font.SysFont('Liberation Mono', 20)
-
 blobs = []
-buffer_size = 20
+buffer_size = 3
 blobs_buffer = [[]] * buffer_size
 old_id = [[]] * buffer_size
 blobs_movement = {}
 
 def blobs_track(blob,i,n):
-    global blobs_movement
     global blobs
+    global blobs_movement
     if blobs_buffer[n] == []:
         if n+1 < buffer_size:
             blobs_track(blob,i,n+1)
         else:
             blob.set_id(i)
-            blobs_movement[i] = [blob.centroid(),blob.centroid()]
+            blobs_movement[i] = [blob.centroid,blob.centroid]
     else:
         for j in range(len(blobs_buffer[n])):
             if blob.isSame(blobs_buffer[n][j]):
@@ -153,11 +147,11 @@ def blobs_track(blob,i,n):
                                 new_id = max(old_id[k])+1
                         blob.set_id(new_id)
                         old_id[0].append(new_id)
-                        blobs_movement[new_id] = [blob.centroid(),blob.centroid()]
+                        blobs_movement[new_id] = [blob.centroid,blob.centroid]
                 else:
                     blob.set_id(new_id)
-                    blobs_movement[new_id].append(blob.centroid())
-                    #blobs_movement[new_id] = blobs_movement[new_id][-20:]
+                    blobs_movement[new_id].append(blob.centroid)
+                    blobs_movement[new_id] = blobs_movement[new_id][-20:]
         if blob.id == -1:
             if n+1 < buffer_size:
                 blobs_track(blob,i,n+1)
@@ -168,7 +162,7 @@ def blobs_track(blob,i,n):
                         new_id = max(old_id[k])+1
                 blob.set_id(new_id)
                 old_id[0].append(new_id)
-                blobs_movement[new_id] = [blob.centroid(),blob.centroid()]
+                blobs_movement[new_id] = [blob.centroid,blob.centroid]
     return blob
 
 def update_old_id():
@@ -177,6 +171,18 @@ def update_old_id():
         old_id[i] = []
         for j in range(len(blobs_buffer[i])):
             old_id[i].append(blobs_buffer[i][j].id)
+
+t0 = 0
+
+def pygame_init(xsize,ysize):
+    pygame.init()
+    global screen
+    screen = pygame.display.set_mode((xsize,ysize),pygame.RESIZABLE)
+    pygame.font.init()
+    global font
+    font = pygame.font.SysFont('Liberation Mono', 20)
+    global t0
+    t0 = time.time()
 
 def pygame_refresh(xsize,ysize):
     screen.fill(BLACK)
@@ -198,23 +204,31 @@ def pygame_refresh(xsize,ysize):
             blobs_buffer[i] = blobs_buffer[i-1]
     for blob in blobs:
         pygame.draw.lines(screen,BLUE,False,blobs_movement[blob.id],1)
-        pygame.draw.lines(screen,GREEN,True,blob.convex_hull(),3)
-        pygame.draw.lines(screen,YELLOW,True,blob.contour_point(),3)
-        pygame.draw.circle(screen,RED,blob.centroid(),10)
-        for tips in blob.convex_hull():
-                pygame.draw.circle(screen,PURPLE,tips,5)
+        pygame.draw.lines(screen,GREEN,True,blob.convex_hull,3)
+        pygame.draw.lines(screen,YELLOW,True,blob.contour_point,3)
+        pygame.draw.circle(screen,RED,blob.centroid,10)
+        for tips in blob.convex_hull:
+            pygame.draw.circle(screen,PURPLE,tips,5)
         if blob.isHand:
             blob_status = "ID: %d >> THIS IS HAND!!!" % (blob.id)
         else:
-            blob_status = "ID: %d Hull: %d Deflect90: %d" % (blob.id,blob.approx_hull_count(),blob.deflect_count(90))
+            blob_status = "ID: %d Hull: %d Deflect90: %d" % (blob.id,blob.approx_hull_count,blob.deflect_count_90)
+            #blob_status = "ID: %d Deflect90: %d" % (blob.id,blob.deflect_count_90)
         blob_status_render = font.render(blob_status, True, WHITE)
-        screen.blit(blob_status_render, blob.centroid())
+        screen.blit(blob_status_render, blob.centroid)
+    global t0
+    t1 = time.time()
+    fps = 1/(t1 - t0)
+    t0 = t1
+    fps_text = "fps: %.2f" % (fps)
+    fps_render = font.render(fps_text, True, WHITE)
+    screen.blit(fps_render, (2,2))
     pygame.display.set_caption('Kinect Tracking')
     pygame.display.flip()
     return 1
 
 def main():
-    xsize,ysize = 640,480
+    xsize,ysize =640,480
     pygame_init(xsize,ysize)
     while True:
         pygame_refresh(xsize,ysize)
