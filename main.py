@@ -71,6 +71,9 @@ class BlobAnalysis:
             return True
         else:
             return False
+    
+    def set_isHand(self):
+        self.isHand = True
 
     def isNear(self,ref):
         (x1,y1) = self.centroid
@@ -99,11 +102,13 @@ def get_contours(xsize,ysize):
     #depth = cv2.dilate(depth, None, iterations=1)
     min_depth = 400
     min_hand_depth = np.amin(depth)
+    if min_hand_depth < min_depth:
+        min_hand_depth = min_depth
     hand_depth = 100
     max_hand_depth = min_hand_depth + hand_depth
     if max_hand_depth > 700 :
         max_hand_depth = 700
-    (_,BW) = cv2.threshold(depth, max_hand_depth, min_depth, cv2.THRESH_BINARY_INV)
+    (_,BW) = cv2.threshold(depth, max_hand_depth, min_hand_depth, cv2.THRESH_BINARY_INV)
     BW = cv2.convertScaleAbs(BW)
     BW = cv2.resize(BW,(xsize,ysize))
     cs,_ = cv2.findContours(BW,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
@@ -150,8 +155,12 @@ def blobs_track(blob,i,n):
                         blobs_movement[new_id] = [blob.centroid,blob.centroid]
                 else:
                     blob.set_id(new_id)
+                    if blobs_buffer[n][j].isHand:
+                        blob.set_isHand()
                     blobs_movement[new_id].append(blob.centroid)
                     blobs_movement[new_id] = blobs_movement[new_id][-20:]
+                if blob.id != -1:
+                    break
         if blob.id == -1:
             if n+1 < buffer_size:
                 blobs_track(blob,i,n+1)
@@ -164,6 +173,44 @@ def blobs_track(blob,i,n):
                 old_id[0].append(new_id)
                 blobs_movement[new_id] = [blob.centroid,blob.centroid]
     return blob
+
+def check_gesture(fps):
+    global blobs
+    global blobs_movement
+    n_blobs = len(blobs)
+    id_hand = []
+    for blob in blobs:
+        if blob.isHand:
+            id_hand.append(blob.id)
+    n_hand = len(id_hand)
+    if n_hand == 0:
+        return "undefined action"
+    elif n_hand == 1:
+        n_frames = int(fps)+1
+        vector = blobs_movement[id_hand[0]][-n_frames:]
+        weight = {"swipe left":0,"swipe right":0}
+        for i in range(len(vector)):
+            if i == 0 :
+                (x0,y0) = blobs_movement[id_hand[0]][0]
+            else:
+                (x1,y1) = blobs_movement[id_hand[0]][i]
+                radian = math.atan2(y1-y0,x1-x0)
+                degree = math.degrees(radian)
+                dist = math.hypot(x1-x0,y1-y0)
+                if dist > 20:
+                    if degree>-45 and degree<45:
+                        weight["swipe right"] += 1
+                    elif degree>135 or degree<-135:
+                        weight["swipe left"] += 1
+                (x0,y0) = (x1,y1)
+        ans = max(weight, key=weight.get)
+        p80 = (8/10)*(n_frames-1)
+        if weight[ans] > p80 :
+            return ans
+        else:
+            return "undefined action"
+    else:
+        return "undefined action"
 
 def update_old_id():
     global old_id
@@ -213,7 +260,6 @@ def pygame_refresh(xsize,ysize):
             blob_status = "ID: %d >> THIS IS HAND!!!" % (blob.id)
         else:
             blob_status = "ID: %d Hull: %d Deflect90: %d" % (blob.id,blob.approx_hull_count,blob.deflect_count_90)
-            #blob_status = "ID: %d Deflect90: %d" % (blob.id,blob.deflect_count_90)
         blob_status_render = font.render(blob_status, True, WHITE)
         screen.blit(blob_status_render, blob.centroid)
     global t0
@@ -223,6 +269,9 @@ def pygame_refresh(xsize,ysize):
     fps_text = "fps: %.2f" % (fps)
     fps_render = font.render(fps_text, True, WHITE)
     screen.blit(fps_render, (2,2))
+    gesture_text = check_gesture(fps)
+    gesture_render = font.render(gesture_text, True, WHITE)
+    screen.blit(gesture_render, (2,20))
     pygame.display.set_caption('Kinect Tracking')
     pygame.display.flip()
     return 1
