@@ -74,6 +74,16 @@ class BlobAnalysis:
     
     def set_isHand(self):
         self.isHand = True
+    
+    def isGrab(self):
+        if self.isHand:
+            contourArea = cv2.contourArea(cv2.convexHull(self.contour))
+            if self.area > 0.7*contourArea :
+                return True
+            else:
+                return False
+        else:
+            return False
 
     def isNear(self,ref):
         (x1,y1) = self.centroid
@@ -273,13 +283,19 @@ def pygame_refresh(xsize,ysize):
     gesture_render = font.render(gesture_text, True, WHITE)
     screen.blit(gesture_render, (2,20))
     pygame.display.set_caption('Kinect Tracking')
-    pygame.display.flip()
+    #pygame.display.flip()
     return 1
 
+xsize,ysize = 640,480
 def main():
-    xsize,ysize =640,480
+    global xsize,ysize
     pygame_init(xsize,ysize)
-    while True:
-        pygame_refresh(xsize,ysize)
+    #while True:
+    #    pygame_refresh(xsize,ysize)
+
+def get_input():
+    global xsize,ysize
+    pygame_refresh(xsize,ysize)
 
 main()
+#get_input()
