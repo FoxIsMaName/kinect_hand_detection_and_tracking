@@ -78,7 +78,7 @@ class BlobAnalysis:
     def isGrab(self):
         if self.isHand:
             contourArea = cv2.contourArea(cv2.convexHull(self.contour))
-            if self.area > 0.7*contourArea :
+            if self.area > 0.9*contourArea :
                 return True
             else:
                 return False
@@ -89,7 +89,7 @@ class BlobAnalysis:
         (x1,y1) = self.centroid
         (x2,y2) = ref.centroid
         dist = math.hypot(x2 - x1, y2 - y1)
-        if dist < 150:
+        if dist < 50:
             return True
         else:
             return False
@@ -107,24 +107,22 @@ def get_contours(xsize,ysize):
     (depth,_) = get_depth()
     depth = depth.astype(np.float32)
     depth = cv2.flip(depth, 1)
+    depth = cv2.resize(depth,(xsize,ysize))
     #depth = cv2.GaussianBlur(depth, (5,5), 0)
     #depth = cv2.erode(depth, None, iterations=1)
     #depth = cv2.dilate(depth, None, iterations=1)
-    min_depth = 400
-    min_hand_depth = np.amin(depth)
-    if min_hand_depth < min_depth:
-        min_hand_depth = min_depth
-    hand_depth = 100
+    min_hand_depth = np.amin(depth)-10
+    hand_depth = 80
     max_hand_depth = min_hand_depth + hand_depth
-    if max_hand_depth > 700 :
-        max_hand_depth = 700
+    if max_hand_depth > 800 :
+        max_hand_depth = 800
     (_,BW) = cv2.threshold(depth, max_hand_depth, min_hand_depth, cv2.THRESH_BINARY_INV)
     BW = cv2.convertScaleAbs(BW)
-    BW = cv2.resize(BW,(xsize,ysize))
+    #BW = cv2.resize(BW,(xsize,ysize))
     cs,_ = cv2.findContours(BW,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     cs_f = []
     for i in range(len(cs)):
-        if cv2.contourArea(cs[i]) > 2000:
+        if cv2.contourArea(cs[i]) > 500:
             cs_f.append(cs[i])
     del depth,BW
     return cs_f
@@ -184,43 +182,82 @@ def blobs_track(blob,i,n):
                 blobs_movement[new_id] = [blob.centroid,blob.centroid]
     return blob
 
+def get_approx_pos((cX,cY),(w,h)):
+    rX = w/3
+    rY = h/3
+    if cX < rX:
+        pX = 0
+    elif cX < 2*rX:
+        pX = 1
+    else:
+        pX = 2
+    if cY < rY:
+        pY = 0
+    elif cY < 2*rY:
+        pY = 1
+    else:
+        pY = 2
+    return (pX,pY)
+
+last_gesture_time = time.time()
+
 def check_gesture(fps):
     global blobs
     global blobs_movement
+    global last_gesture_time
+    now = time.time()
+    if now > last_gesture_time + 1:
+        n_blobs = len(blobs)
+        id_hand = []
+        for blob in blobs:
+            if blob.isHand:
+                id_hand.append(blob.id)
+        n_hand = len(id_hand)
+        if n_hand == 0:
+            return "undefined action"
+        elif n_hand == 1:
+            n_frames = int(fps)+1
+            vector = blobs_movement[id_hand[0]][-n_frames:]
+            weight = {"swipe up":0,"swipe down":0,"swipe left":0,"swipe right":0}
+            for i in range(len(vector)):
+                if i == 0 :
+                    (x0,y0) = blobs_movement[id_hand[0]][0]
+                else:
+                    (x1,y1) = blobs_movement[id_hand[0]][i]
+                    radian = math.atan2(y1-y0,x1-x0)
+                    degree = math.degrees(radian)
+                    dist = math.hypot(x1-x0,y1-y0)
+                    if dist > 15:
+                        if degree>-135 and degree<-45:
+                            weight["swipe up"] += 1
+                        if degree>45 and degree<135:
+                            weight["swipe down"] += 1
+                        if degree>135 or degree<-135:
+                            weight["swipe left"] += 1
+                        if degree>-45 and degree<45:
+                            weight["swipe right"] += 1
+                    (x0,y0) = (x1,y1)
+            ans = "" + max(weight, key=weight.get)
+            p80 = (8/10)*(n_frames-1)
+            if weight[ans] > p80 :
+                last_gesture_time = now
+                return ans
+    return "undefined action"
+
+def check_hover():
+    global blobs
+    global xsize,ysize
     n_blobs = len(blobs)
-    id_hand = []
+    n = 0
     for blob in blobs:
         if blob.isHand:
-            id_hand.append(blob.id)
-    n_hand = len(id_hand)
-    if n_hand == 0:
-        return "undefined action"
-    elif n_hand == 1:
-        n_frames = int(fps)+1
-        vector = blobs_movement[id_hand[0]][-n_frames:]
-        weight = {"swipe left":0,"swipe right":0}
-        for i in range(len(vector)):
-            if i == 0 :
-                (x0,y0) = blobs_movement[id_hand[0]][0]
-            else:
-                (x1,y1) = blobs_movement[id_hand[0]][i]
-                radian = math.atan2(y1-y0,x1-x0)
-                degree = math.degrees(radian)
-                dist = math.hypot(x1-x0,y1-y0)
-                if dist > 20:
-                    if degree>-45 and degree<45:
-                        weight["swipe right"] += 1
-                    elif degree>135 or degree<-135:
-                        weight["swipe left"] += 1
-                (x0,y0) = (x1,y1)
-        ans = max(weight, key=weight.get)
-        p80 = (8/10)*(n_frames-1)
-        if weight[ans] > p80 :
-            return ans
-        else:
-            return "undefined action"
-    else:
-        return "undefined action"
+            n += 1
+    if n == 0:
+        return (4,4),False
+    elif n == 1:
+        x,y = blobs[0].centroid
+        return get_approx_pos((x,y),(xsize,ysize)), blobs[0].isGrab()
+    return (4,4),False
 
 def update_old_id():
     global old_id
@@ -229,8 +266,6 @@ def update_old_id():
         for j in range(len(blobs_buffer[i])):
             old_id[i].append(blobs_buffer[i][j].id)
 
-t0 = 0
-
 def pygame_init(xsize,ysize):
     pygame.init()
     global screen
@@ -238,11 +273,10 @@ def pygame_init(xsize,ysize):
     pygame.font.init()
     global font
     font = pygame.font.SysFont('Liberation Mono', 20)
-    global t0
-    t0 = time.time()
+
+clock = pygame.time.Clock()
 
 def pygame_refresh(xsize,ysize):
-    screen.fill(BLACK)
     global blobs
     blobs = []
     global blobs_buffer
@@ -259,6 +293,10 @@ def pygame_refresh(xsize,ysize):
             blobs_buffer[i] = blobs
         else:
             blobs_buffer[i] = blobs_buffer[i-1]
+    return 1
+
+def draw_debug_screen():
+    screen.fill(BLACK)
     for blob in blobs:
         pygame.draw.lines(screen,BLUE,False,blobs_movement[blob.id],1)
         pygame.draw.lines(screen,GREEN,True,blob.convex_hull,3)
@@ -272,10 +310,9 @@ def pygame_refresh(xsize,ysize):
             blob_status = "ID: %d Hull: %d Deflect90: %d" % (blob.id,blob.approx_hull_count,blob.deflect_count_90)
         blob_status_render = font.render(blob_status, True, WHITE)
         screen.blit(blob_status_render, blob.centroid)
-    global t0
-    t1 = time.time()
-    fps = 1/(t1 - t0)
-    t0 = t1
+    global clock
+    clock.tick(30)
+    fps = clock.get_fps()
     fps_text = "fps: %.2f" % (fps)
     fps_render = font.render(fps_text, True, WHITE)
     screen.blit(fps_render, (2,2))
@@ -284,14 +321,14 @@ def pygame_refresh(xsize,ysize):
     screen.blit(gesture_render, (2,20))
     pygame.display.set_caption('Kinect Tracking')
     #pygame.display.flip()
-    return 1
 
-xsize,ysize = 640,480
+xsize,ysize = 320,240
 def main():
     global xsize,ysize
     pygame_init(xsize,ysize)
-    #while True:
-    #    pygame_refresh(xsize,ysize)
+##    while True:
+##        pygame_refresh(xsize,ysize)
+##        draw_debug_screen()
 
 def get_input():
     global xsize,ysize
