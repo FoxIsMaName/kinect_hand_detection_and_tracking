@@ -334,5 +334,5 @@ def get_input():
     global xsize,ysize
     pygame_refresh(xsize,ysize)
 
-main()
+#main()
 #get_input()
