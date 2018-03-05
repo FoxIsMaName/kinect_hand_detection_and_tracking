@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+  background: Black;
+    color: White;
+    font-family: consolas;
+    margin: 0;
+}
+
+/* Create two equal columns that floats next to each other */
+.column {
+    float: left;
+    width: 50%;
+    padding: 10px;
+}
+
+/* Clear floats after the columns */
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+#footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+}
+.container {
+    display: inline-block;
+    cursor: pointer;
+}
+
+.bar1, .bar2, .bar3 {
+    width: 35px;
+    height: 5px;
+    background-color: #5A5A5A;
+    margin: 6px 0;
+    transition: 0.4s;
+}
+
+.change .bar1 {
+    -webkit-transform: rotate(-45deg) translate(-9px, 6px);
+    transform: rotate(-45deg) translate(-9px, 6px);
+}
+
+.change .bar2 {opacity: 0;}
+
+.change .bar3 {
+    -webkit-transform: rotate(45deg) translate(-8px, -8px);
+    transform: rotate(45deg) translate(-8px, -8px);
+}
+
+ /* The Modal (background) */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0); /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+.modal-content {
+    background-color: #fefefe;
+    color: #000000;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 500px;
+    min-height: 500px;
+}
+</style>
+<script>
+    function startTime() {
+        var date = new Date();
+        var h = date.getHours();
+        var m = date.getMinutes();
+        var s = date.getSeconds();
+        m = to2digits(m);
+        s = to2digits(s);
+        document.getElementById('time').innerHTML = h + ":" + m + ":" + s;
+        document.getElementById("date").innerHTML = date.toDateString();
+        var t = setTimeout(startTime, 1000);
+    }
+    function to2digits(i) {
+        if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+        return i;
+    }
+</script>
+<script>
+!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+</script>
+</head>
+<body onload="startTime()">
+    <div class="row">
+        <div class="column">
+            <a class="weatherwidget-io" href="https://forecast7.com/en/13d76100d50/bangkok/" data-label_1="BANGKOK" data-label_2="WEATHER" data-font="Consolas" data-icons="Climacons Animated" data-theme="dark" data-suncolor="#ffcc00" data-cloudfill="#adadad" style="display:block;width:200px"></a>
+        </div>
+        <div class="column" align="right">
+            <div id="time" style="font-size: 300%;"></div>
+            <div id="date" style="font-size: 130%;"></div>
+        </div>
+    </div>
+    <div id="menu" class="modal">
+        <div class="modal-content" color="#aaa">
+            <button id="btn" type="button" onclick="open_map()">Map</button>
+            <button id="btn" type="button" onclick="open_news()">News</button>
+        </div>
+    </div>
+    <div id="map" class="modal">
+        <div class="modal-content" color="#aaa">
+            <iframe
+                frameborder="0" style="width:453px;height:453px;border:0"
+                src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyDjV6hQ6W2NYpCoB746pWBIA7-MRu_s4p0
+                    &origin=13.8187358,100.5143705
+                    &destination=13.8272572,100.5276682"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+    <div id="news" class="modal">
+        <div id="news_data" class="modal-content" color="#aaa">
+            Loading...
+        </div>
+    </div>
+    <div id="footer">
+        <div id="menu_btn" class="container" onclick="open_menu()" href="#open-modal">
+            <div class="bar1"></div>
+            <div class="bar2"></div>
+            <div class="bar3"></div>
+        </div>
+    </div>
+    <script>
+        var state = "main";
+        var menu = document.getElementById('menu');
+        var map = document.getElementById('map');
+        var menu_btn = document.getElementById('menu_btn');
+        function open_menu() {
+            if (state == "main") {
+                menu_btn.classList.toggle("change");
+            }
+            menu.style.display = "block";
+            state = "menu";
+        }
+        function open_map() {
+            menu.style.display = "none";
+            map.style.display = "block";
+            state = "map";
+        }
+        function open_news() {
+            menu.style.display = "none";
+            news.style.display = "block";
+            state = "news";
+            get_news();
+        }
+        window.onclick = function(event) {
+            if (event.target == menu) {
+                menu.style.display = "none";
+                menu_btn.classList.toggle("change");
+                state = "main"
+            }else if (event.target == map) {
+                map.style.display = "none";
+                menu_btn.classList.toggle("change");
+                state = "main"
+            }else if (event.target == news) {
+                news.style.display = "none";
+                menu_btn.classList.toggle("change");
+                state = "main"
+            }
+        }
+        document.onkeydown = function (e) {
+            var keyCode = e.keyCode;
+            var action = true;
+            if (action == true && state == "main") {
+                if(keyCode == 27) { //esc
+                    open_menu();
+                    action = false;
+                }
+            }
+            if (action == true && state == "menu") {
+                if(keyCode == 37) { //left arrow
+                    open_map();
+                    action = false;
+                }
+                if(keyCode == 39) { //right arrow
+                    open_news();
+                    action = false;
+                }
+            }
+            if (action == true && state != "main") {
+                if(keyCode == 27) { //esc
+                    menu.style.display = "none";
+                    map.style.display = "none";
+                    news.style.display = "none";
+                    menu_btn.classList.toggle("change");
+                    state = "main"
+                    action = false;
+                }
+            }
+        };
+        function get_news() {
+            var xhttp;
+            xhttp=new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    var res = JSON.parse(xhttp.response);
+                    var data = "";
+                    for(i in res.articles){
+                        console.log(i);
+                        console.log(res.articles[i].title);
+                        data = data + "<h3>" + (res.articles[i].title) + "</h3>" + (res.articles[i].description);
+                    }
+                    var element = document.getElementById("news_data");
+                    element.innerHTML = data + "</br></br>";
+                }
+            };
+            xhttp.open("GET", "https://newsapi.org/v2/top-headlines?country=th&pageSize=5&apiKey=b715722295c542c98659778f781e70ab", true);
+            xhttp.send();
+        }
+    </script>
+</body>
+</html>
