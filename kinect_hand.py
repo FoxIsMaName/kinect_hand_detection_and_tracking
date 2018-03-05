@@ -199,50 +199,45 @@ def get_approx_pos((cX,cY),(w,h)):
         pY = 2
     return (pX,pY)
 
-last_gesture_time = time.time()
-
 def check_gesture(fps):
     global blobs
     global blobs_movement
-    global last_gesture_time
-    now = time.time()
-    if now > last_gesture_time + 1:
-        n_blobs = len(blobs)
-        id_hand = []
-        for blob in blobs:
-            if blob.isHand:
-                id_hand.append(blob.id)
-        n_hand = len(id_hand)
-        if n_hand == 0:
+    n_blobs = len(blobs)
+    id_hand = []
+    for blob in blobs:
+        if blob.isHand:
+            id_hand.append(blob.id)
+    n_hand = len(id_hand)
+    if n_hand == 0:
+        return "undefined action"
+    elif n_hand == 1:
+        n_frames = int(fps)+1
+        vector = blobs_movement[id_hand[0]][-n_frames:]
+        weight = {"swipe up":0,"swipe down":0,"swipe left":0,"swipe right":0}
+        for i in range(len(vector)):
+            if i == 0 :
+                (x0,y0) = blobs_movement[id_hand[0]][0]
+            else:
+                (x1,y1) = blobs_movement[id_hand[0]][i]
+                radian = math.atan2(y1-y0,x1-x0)
+                degree = math.degrees(radian)
+                dist = math.hypot(x1-x0,y1-y0)
+                if dist > 10:
+                    if degree>-135 and degree<-45:
+                        weight["swipe up"] += 1
+                    if degree>45 and degree<135:
+                        weight["swipe down"] += 1
+                    if degree>135 or degree<-135:
+                        weight["swipe left"] += 1
+                    if degree>-45 and degree<45:
+                        weight["swipe right"] += 1
+                (x0,y0) = (x1,y1)
+        ans = "" + max(weight, key=weight.get)
+        p70 = (7/10)*(n_frames-1)
+        if weight[ans] > p70 :
+            return ans
+        else :
             return "undefined action"
-        elif n_hand == 1:
-            n_frames = int(fps)+1
-            vector = blobs_movement[id_hand[0]][-n_frames:]
-            weight = {"swipe up":0,"swipe down":0,"swipe left":0,"swipe right":0}
-            for i in range(len(vector)):
-                if i == 0 :
-                    (x0,y0) = blobs_movement[id_hand[0]][0]
-                else:
-                    (x1,y1) = blobs_movement[id_hand[0]][i]
-                    radian = math.atan2(y1-y0,x1-x0)
-                    degree = math.degrees(radian)
-                    dist = math.hypot(x1-x0,y1-y0)
-                    if dist > 15:
-                        if degree>-135 and degree<-45:
-                            weight["swipe up"] += 1
-                        if degree>45 and degree<135:
-                            weight["swipe down"] += 1
-                        if degree>135 or degree<-135:
-                            weight["swipe left"] += 1
-                        if degree>-45 and degree<45:
-                            weight["swipe right"] += 1
-                    (x0,y0) = (x1,y1)
-            ans = "" + max(weight, key=weight.get)
-            p80 = (8/10)*(n_frames-1)
-            if weight[ans] > p80 :
-                last_gesture_time = now
-                return ans
-    return "undefined action"
 
 def check_hover():
     global blobs

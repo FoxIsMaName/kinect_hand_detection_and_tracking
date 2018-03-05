@@ -186,7 +186,7 @@ body {
             var keyCode = e.keyCode;
             var action = true;
             if (action == true && state == "main") {
-                if(keyCode == 27) { //esc
+                if(keyCode == 27 || keyCode == 38) { //esc
                     open_menu();
                     action = false;
                 }
@@ -202,7 +202,7 @@ body {
                 }
             }
             if (action == true && state != "main") {
-                if(keyCode == 27) { //esc
+                if(keyCode == 27 || keyCode == 40) { //esc
                     menu.style.display = "none";
                     map.style.display = "none";
                     news.style.display = "none";
