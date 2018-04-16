@@ -114,8 +114,8 @@ def get_contours(xsize,ysize):
     min_hand_depth = np.amin(depth)-10
     hand_depth = 80
     max_hand_depth = min_hand_depth + hand_depth
-    if max_hand_depth > 800 :
-        max_hand_depth = 800
+    if max_hand_depth > 700 :
+        max_hand_depth = 700
     (_,BW) = cv2.threshold(depth, max_hand_depth, min_hand_depth, cv2.THRESH_BINARY_INV)
     BW = cv2.convertScaleAbs(BW)
     #BW = cv2.resize(BW,(xsize,ysize))
@@ -216,13 +216,13 @@ def check_gesture(fps):
         weight = {"swipe up":0,"swipe down":0,"swipe left":0,"swipe right":0}
         for i in range(len(vector)):
             if i == 0 :
-                (x0,y0) = blobs_movement[id_hand[0]][0]
+                (x0,y0) = vector[0]
             else:
-                (x1,y1) = blobs_movement[id_hand[0]][i]
+                (x1,y1) = vector[i]
                 radian = math.atan2(y1-y0,x1-x0)
                 degree = math.degrees(radian)
                 dist = math.hypot(x1-x0,y1-y0)
-                if dist > 10:
+                if dist > 8:
                     if degree>-135 and degree<-45:
                         weight["swipe up"] += 1
                     if degree>45 and degree<135:
@@ -317,7 +317,7 @@ def draw_debug_screen():
     pygame.display.set_caption('Kinect Tracking')
     #pygame.display.flip()
 
-xsize,ysize = 320,240
+xsize,ysize = 280,210
 def main():
     global xsize,ysize
     pygame_init(xsize,ysize)

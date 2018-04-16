@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import webview
+import os
 
 from pynput.keyboard import Key, Controller
 import time
@@ -10,14 +11,18 @@ import kinect_hand as input
 from threading import Thread
 
 def show_page():
-    webview.create_window("It works!", url="home.html", width=560, height=800, fullscreen=False, background_color="#000000")
+    os.system("chromium-browser --app=file:///home/pi/Desktop/kinect_hand_detection_and_tracking/src/index.html")
+    #webview.create_window("It works!", url="src/index.html", width=560, height=800, fullscreen=False, background_color="#000000")
 
 def keymap():
     keyboard = Controller()
+    os.system("sleep 5")
+    keyboard.press(Key.f11)
+    keyboard.release(Key.f11)
     fps = 0
     last_gesture = "undefined action"
+    t0 = time.clock()
     while True:
-        t0 = time.clock()
         input.get_input()
         gesture = input.check_gesture(fps)
         t1 = time.clock()
@@ -26,16 +31,17 @@ def keymap():
             if gesture == "swipe up":
                 keyboard.press(Key.up)
                 keyboard.release(Key.up)
-            if gesture == "swipe down" and last_gesture == "undefined action" :
+            if gesture == "swipe down":
                 keyboard.press(Key.down)
                 keyboard.release(Key.down)
             if gesture == "swipe left":
-                keyboard.press(Key.left)
-                keyboard.release(Key.left)
-            if gesture == "swipe right":
                 keyboard.press(Key.right)
                 keyboard.release(Key.right)
+            if gesture == "swipe right":
+                keyboard.press(Key.left)
+                keyboard.release(Key.left)
         last_gesture = gesture
+        t0 = t1
 
 th0 = Thread(target=show_page, args=())
 th0.start()
