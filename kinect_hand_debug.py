@@ -106,23 +106,22 @@ class BlobAnalysis:
 def get_contours(xsize,ysize):
     (depth,_) = get_depth()
     depth = depth.astype(np.float32)
-    depth = cv2.flip(depth, 1)
+    depth = cv2.flip(depth, 0)
     depth = cv2.resize(depth,(xsize,ysize))
-    depth = cv2.GaussianBlur(depth, (5,5), 0)
-    depth = cv2.erode(depth, None, iterations=1)
-    depth = cv2.dilate(depth, None, iterations=1)
+    #depth = cv2.GaussianBlur(depth, (5,5), 0)
+    #depth = cv2.erode(depth, None, iterations=1)
+    #depth = cv2.dilate(depth, None, iterations=1)
     min_hand_depth = np.amin(depth)-10
     hand_depth = 80
     max_hand_depth = min_hand_depth + hand_depth
-    if max_hand_depth > 700 :
-        max_hand_depth = 700
+    #if max_hand_depth > 700 :
+    #    max_hand_depth = 700
     (_,BW) = cv2.threshold(depth, max_hand_depth, min_hand_depth, cv2.THRESH_BINARY_INV)
     BW = cv2.convertScaleAbs(BW)
     #BW = cv2.resize(BW,(xsize,ysize))
     cs,_ = cv2.findContours(BW,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     cs_f = []
     for i in range(len(cs)):
-##        if (cv2.contourArea(cs[i]) > 500 and cv2.contourArea(cs[i]) < 2000):
         if cv2.contourArea(cs[i]) > 500:
             cs_f.append(cs[i])
     del depth,BW
@@ -268,7 +267,7 @@ def pygame_init(xsize,ysize):
     screen = pygame.display.set_mode((xsize,ysize),pygame.RESIZABLE)
     pygame.font.init()
     global font
-    font = pygame.font.SysFont('Liberation Mono', 20)
+    font = pygame.font.SysFont('Liberation Mono', 15)
 
 clock = pygame.time.Clock()
 
@@ -292,16 +291,17 @@ def pygame_refresh(xsize,ysize):
     return 1
 
 def draw_debug_screen():
+    global blobs_movement
     screen.fill(BLACK)
     for blob in blobs:
-        pygame.draw.lines(screen,BLUE,False,blobs_movement[blob.id],1)
+        pygame.draw.lines(screen,BLUE,False,blobs_movement[blob.id],2)
         pygame.draw.lines(screen,GREEN,True,blob.convex_hull,3)
         pygame.draw.lines(screen,YELLOW,True,blob.contour_point,3)
         pygame.draw.circle(screen,RED,blob.centroid,10)
         for tips in blob.convex_hull:
             pygame.draw.circle(screen,PURPLE,tips,5)
         if blob.isHand:
-            blob_status = "ID: %d >> THIS IS HAND!!!" % (blob.id)
+            blob_status = "ID: %d >> HAND" % (blob.id)
         else:
             blob_status = "ID: %d Hull: %d Deflect90: %d" % (blob.id,blob.approx_hull_count,blob.deflect_count_90)
         blob_status_render = font.render(blob_status, True, WHITE)
@@ -316,19 +316,30 @@ def draw_debug_screen():
     gesture_render = font.render(gesture_text, True, WHITE)
     screen.blit(gesture_render, (2,20))
     pygame.display.set_caption('Kinect Tracking')
-    #pygame.display.flip()
+    pygame.display.flip()
+    return screen
 
-xsize,ysize = 280,210
+#xsize,ysize = 280,210
+xsize,ysize = 320,240
 def main():
     global xsize,ysize
     pygame_init(xsize,ysize)
-##    while True:
-##        pygame_refresh(xsize,ysize)
-##        draw_debug_screen()
+    while True:
+        get_input()
+        save = False
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SLASH:
+                    save = True
+        if save:
+            pygame.image.save(draw_debug_screen(),str(time.clock())+".jpg")
+        else:
+            draw_debug_screen()
 
 def get_input():
     global xsize,ysize
     pygame_refresh(xsize,ysize)
 
-#main()
+main()
 #get_input()

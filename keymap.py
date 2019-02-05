@@ -11,14 +11,16 @@ import kinect_hand as input
 from threading import Thread
 
 def show_page():
-    os.system("chromium-browser --app=file:///home/pi/Desktop/kinect_hand_detection_and_tracking/src/index.html")
+    os.system("sleep 5")
+    #os.system("chromium-browser -no-sandbox --app=file:///home/pi/Desktop/kinect_hand_detection_and_tracking/src/index.html")
+    os.system("chromium-browser -no-sandbox --app=http://13.229.228.18:9000/mirror/test")
     #webview.create_window("It works!", url="src/index.html", width=560, height=800, fullscreen=False, background_color="#000000")
 
 def keymap():
     keyboard = Controller()
-    os.system("sleep 5")
-    keyboard.press(Key.f11)
-    keyboard.release(Key.f11)
+    os.system("sleep 25")
+    #keyboard.press(Key.f11)
+    #keyboard.release(Key.f11)
     fps = 0
     last_gesture = "undefined action"
     t0 = time.clock()

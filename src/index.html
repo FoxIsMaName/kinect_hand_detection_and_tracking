@@ -12,6 +12,15 @@
         <!-- Theme used for syntax highlighting of code -->
         <link rel="stylesheet" href="lib/css/zenburn.css">
 
+        <!-- Theme used for Audio Playlist --> 
+        <link rel="stylesheet" href="css/styles.css">
+
+        <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+
+        <script type="text/javascript" src="js/jquery-ui-1.8.21.custom.min.js"></script>
+
+        <script type="text/javascript" src="js/main.js"></script>
+
         <!-- Printing and PDF exports -->
         <script>
             var link = document.createElement( 'link' );
@@ -46,6 +55,10 @@
                 display: table;
                 clear: both;
                 width: 100%;
+            }.scrollable {
+                bottom: 0px;
+                overflow-y: auto  !important;
+                overflow-x: hidden !important;
             }
         </style>
     </head>
@@ -65,7 +78,7 @@
                     <div class="row">
                         <div class="column" align="left">
                             <iframe
-                                frameborder="0" width="200px" height="585px"
+                                frameborder="0" width="200px" height="700px"
                                 src="weather.html"
                                 allowfullscreen>
                             </iframe>
@@ -76,17 +89,54 @@
                         </div>
                     </div>
                 </section>
-                <section style="width: 100%;">
+                <section class="scrollable" tabindex="-1" style="width: 100%;">
                     <div id="news_data" style="text-align: center;width: 90%;margin-left: auto;margin-right: auto;">
                         Loading...
                     </div>
                 </section>
                 <section style="height: 100%; padding-top: 25px">
                     <iframe
-                        data-autoplay
-                        frameborder="0" width="40%" height="40%"
-                        src="http://www.youtube.com/embed/gbbJ9eB4Ae8"
-                        allowfullscreen>
+                    data-autoplay
+                    frameborder="0" width="40%" height="40%"
+                    src="https://www.youtube.com/embed/maDMTofRfGk"
+                    allowfullscreen></iframe>
+                </section>
+                <section style="height: 100%;">
+
+                    <div class="example">
+
+                        <div class="player">
+                            <div class="pl"></div>
+                            <div class="title_player" style="font-size: 40%"></div>
+                            <div class="artist" style="font-size: 40%"></div>
+                            <div class="cover"></div>
+                            <div class="controls_player">
+                                <div class="play"></div>
+                                <div class="pause"></div>
+                                <div class="rew"></div>
+                                <div class="fwd"></div>
+                            </div>
+                            <div class="volume"></div>
+                            <div class="tracker"></div>
+                        </div>
+                        <ul class="playlist hidden" style="padding-left: 5%; padding-right: 15%; font-size: 50%">
+                            <li audiourl="01.mp3" cover="cover1.jpg" artist="Artist 1">01.mp3</li>
+                            <li audiourl="02.mp3" cover="cover2.jpg" artist="Artist 2">02.mp3</li>
+                            <li audiourl="03.mp3" cover="cover3.jpg" artist="Artist 3">03.mp3</li>
+                            <li audiourl="04.mp3" cover="cover4.jpg" artist="Artist 4">04.mp3</li>
+                            <li audiourl="05.mp3" cover="cover5.jpg" artist="Artist 5">05.mp3</li>
+                            <li audiourl="06.mp3" cover="cover6.jpg" artist="Artist 6">06.mp3</li>
+                            <li audiourl="07.mp3" cover="cover7.jpg" artist="Artist 7">07.mp3</li>
+                        </ul>
+
+                    </div>
+                </section>
+                <section style="height: 100%; padding-top: 50px;">
+                    <iframe 
+                    src="https://open.spotify.com/embed/album/7wfjL0ZBEycLvXzJmHF45g" 
+                    width="400" height="480" frameborder="1" 
+                    allowtransparency="true" 
+                    allow="encrypted-media">
                     </iframe>
                 </section>
             </div>
@@ -131,7 +181,7 @@
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         var res = JSON.parse(xhttp.response);
-                        var data = "<h3>News</h3><ul>";
+                        var data = '<h3>News</h3><ul>';
                         for(i in res.articles){
                             //console.log(res.articles[i].title);
                             //console.log(res.articles[i].urlToImage);
@@ -142,7 +192,7 @@
                         element.innerHTML = data + "</ul>";
                     }
                 };
-                xhttp.open("GET", "https://newsapi.org/v2/top-headlines?country=th&pageSize=5&apiKey=b715722295c542c98659778f781e70ab", true);
+                xhttp.open("GET", "https://newsapi.org/v2/top-headlines?country=th&pageSize=6&apiKey=b715722295c542c98659778f781e70ab", true);
                 xhttp.send();
             }
             get_news();
