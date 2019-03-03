@@ -4,7 +4,7 @@
  *
  * Licensed under the MIT license.
  * http://www.opensource.org/licenses/mit-license.php
- * 
+ *
  * Copyright 2012, Script Tutorials
  * http://www.script-tutorials.com/
  */
@@ -50,7 +50,35 @@ jQuery(document).ready(function() {
         $('.play').removeClass('hidden');
         $('.pause').removeClass('visible');
     }
-
+    //keyboard control
+    document.onkeydown = function (e) {
+      var keyCode = e.keyCode;
+        if(keyCode == 88) { //x
+          if( !song.paused ){
+            e.preventDefault();
+            stopAudio();
+          }else{
+            e.preventDefault();
+            playAudio();
+          }
+        }else if (keyCode == 90) {//z
+            e.preventDefault();
+            stopAudio();
+            var prev = $('.playlist li.active').prev();
+            if (prev.length == 0) {
+                prev = $('.playlist li:last-child');
+            }
+            initAudio(prev);
+        }else if (keyCode == 67) {//v
+            e.preventDefault();
+            stopAudio();
+            var next = $('.playlist li.active').next();
+            if (next.length == 0) {
+                next = $('.playlist li:first-child');
+            }
+            initAudio(next);
+        }
+    }
     // play click
     $('.play').click(function (e) {
         e.preventDefault();
