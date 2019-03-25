@@ -8,13 +8,52 @@
  * Copyright 2012, Script Tutorials
  * http://www.script-tutorials.com/
  */
+ var player;
+ var time_update_interval = 0;
+ // this function gets called when API is ready to use
+ function onYouTubePlayerAPIReady() {
+   // create the global player from the specific iframe (#video)
+   player = new YT.Player('video-placeholder', {
+     width: 600,
+     height: 400,
+     videoId: 'j5HJabRT43I',
+     playerVars: {
+     color: 'white',
+     playlist: '5wUYa8jPQBU,px5OHMTCSBI,TslY0Tg1O5s,'
+     },
+     events: {
+       // call this function when player is ready to use
+       'onReady': initialize
+     }
+   });
+ }
+ function initialize(){
+
+     // Update the controls on load
+     updateTimerDisplay();
+     updateProgressBar();
+
+     // Clear any old interval.
+     clearInterval(time_update_interval);
+
+     // Start interval to update elapsed time display and
+     // the elapsed part of the progress bar every second.
+     time_update_interval = setInterval(function () {
+         updateTimerDisplay();
+         updateProgressBar();
+     }, 1000);
+
+
+     $('#volume-input').val(Math.round(player.getVolume()));
+ }
 jQuery(document).ready(function() {
 
     // inner variables
     var song;
     var tracker = $('.tracker');
     var volume = $('.volume');
-
+    var i = 1;
+    var page_num = 1;
     function initAudio(elem) {
         var url = elem.attr('audiourl');
         var title = elem.text();
@@ -50,15 +89,56 @@ jQuery(document).ready(function() {
         $('.play').removeClass('hidden');
         $('.pause').removeClass('visible');
     }
-    //keyboard control
+
+
     document.onkeydown = function (e) {
       var keyCode = e.keyCode;
+      $("#num").css("color","red");
+      var section_len = document.getElementsByTagName("section").length;
+      if(keyCode == 66) { //b
+          Reveal.slide(1, 1);
+      }
+      if(keyCode == 37 && page_num > 0){
+        page_num = page_num - 1
+        $("#num").html(document.getElementsByTagName("section")[page_num].id);
+      }else if(keyCode == 39 && page_num < section_len - 1){
+        page_num = page_num + 1
+        $("#num").html(document.getElementsByTagName("section")[page_num].id);
+      }
+
+
+      var tag = document.getElementsByTagName("section")[page_num];
+
+      if( tag.id == "weather"){
+        if( keyCode == 88){
+            alert("444");
+            req = $.ajax({
+              url : '~/sender.py',
+              type : 'POST',
+              data : {status : "ON"},
+              success : function (response){
+                alert("555");
+              }
+            });
+        }
+      }
+      if( tag.id == "youtube"){
         if(keyCode == 88) { //x
+            $("#num").css("color","blue");
+            player.playVideo();
+        }
+      }
+
+      if( tag.id == "music_player"){
+        if(keyCode == 88) { //x
+          $("#num").css("color","red");
           if( !song.paused ){
             e.preventDefault();
+            $("#num").css("color","red");
             stopAudio();
           }else{
             e.preventDefault();
+              $("#num").css("color","yellow");
             playAudio();
           }
         }else if (keyCode == 90) {//z
@@ -78,11 +158,18 @@ jQuery(document).ready(function() {
             }
             initAudio(next);
         }
+      }
+      //37 is left arrow and 39 is Right arrow
+      if( keyCode == 37 || keyCode == 39 ){
+        $("#keyboard").html(keyCode)
+        e.preventDefault();
+        stopAudio();
+      }
     }
+
     // play click
     $('.play').click(function (e) {
         e.preventDefault();
-
         playAudio();
     });
 
