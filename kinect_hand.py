@@ -25,30 +25,30 @@ class BlobAnalysis:
         self.area = cv2.contourArea(self.contour)
         self.deflect_count_90 = self.get_deflect_count(90)
         self.isHand = self.check_isHand()
-    
+
     def set_id(self,i):
         self.id = i
-    
+
     def get_contour_point(self):
         return np.array(self.contour_s).tolist()
-    
+
     def get_centroid(self):
         m = cv2.moments(self.contour)
         cX = int(m['m10'] / m['m00'])
         cY = int(m['m01'] / m['m00'])
         return (cX, cY)
-    
+
     def get_convex_hull(self):
         convexHull = cv2.convexHull(self.contour)
         epsilon = 0.015*cv2.arcLength(convexHull,True)
         approx = cv2.approxPolyDP(convexHull,epsilon,True)
         approx = np.vstack(approx).squeeze()
         return np.array(approx).tolist()
-    
+
     def get_approx_hull_count(self):
         approx = self.convex_hull
         return len(approx)
-    
+
     def get_deflect_count(self,max_angle):
         count = 0
         hull = cv2.convexHull(self.contour,returnPoints = False)
@@ -65,16 +65,16 @@ class BlobAnalysis:
             if angle <= max_angle:
                 count += 1
         return count
-    
+
     def check_isHand(self):
         if self.deflect_count_90 == 4 :
             return True
         else:
             return False
-    
+
     def set_isHand(self):
         self.isHand = True
-    
+
     def isGrab(self):
         if self.isHand:
             contourArea = cv2.contourArea(cv2.convexHull(self.contour))
@@ -93,7 +93,7 @@ class BlobAnalysis:
             return True
         else:
             return False
-    
+
     def isSame(self,ref):
         if self.isNear(ref):
             if self.area < 1.5*ref.area or self.area < 0.1*ref.area:
@@ -137,50 +137,57 @@ blobs_movement = {}
 def blobs_track(blob,i,n):
     global blobs
     global blobs_movement
+    print(blobs_buffer[0])
+
+    #------------------------------------Initialize State ----------------------------
     if blobs_buffer[n] == []:
         if n+1 < buffer_size:
             blobs_track(blob,i,n+1)
         else:
             blob.set_id(i)
             blobs_movement[i] = [blob.centroid,blob.centroid]
+
     else:
         for j in range(len(blobs_buffer[n])):
-            if blob.isSame(blobs_buffer[n][j]):
-                new_id = blobs_buffer[n][j].id
+            if blob.isSame(blobs_buffer[n][j]):     # if new blob is same as old one
+                new_id = blobs_buffer[n][j].id      # new id = id of old blob
                 exist = False
-                for k in blobs:
+                for k in blobs:                     # if contour data has more than 1 data
                     if k.id == new_id:
                         exist = True
                 if exist:
                     if n+1 < buffer_size:
-                        blobs_track(blob,i,n+1)
+                        blobs_track(blob,i,n+1)     # recursive call blobs_track but increse n + 1
                     else:
                         new_id = 1
                         for k in range(buffer_size):
-                            if max(old_id[k]or[0])+1 > new_id:
-                                new_id = max(old_id[k])+1
-                        blob.set_id(new_id)
-                        old_id[0].append(new_id)
-                        blobs_movement[new_id] = [blob.centroid,blob.centroid]
+                            if max(old_id[k]or[0])+1 > new_id:                  # if maximum of old id + 1 is higher than new id
+                                new_id = max(old_id[k])+1                       # set new id with the max of old id + 1
+                        blob.set_id(new_id)                                     # set blob id with new id
+                        old_id[0].append(new_id)                                # add new id to the first array
+                        blobs_movement[new_id] = [blob.centroid,blob.centroid]  # set centroid into blob movement
+
+                #---------------------- in the case that contour has only one data ---------------------------
                 else:
-                    blob.set_id(new_id)
-                    if blobs_buffer[n][j].isHand:
-                        blob.set_isHand()
-                    blobs_movement[new_id].append(blob.centroid)
-                    blobs_movement[new_id] = blobs_movement[new_id][-20:]
+                    blob.set_id(new_id)                                         # set blob id with the old one
+                    if blobs_buffer[n][j].isHand:                               # check that the old blob is a hand or not
+                        blob.set_isHand()                                       # if true set isHand in the blob is true
+                    blobs_movement[new_id].append(blob.centroid)                # add blob centroid into blobs movement
+                    blobs_movement[new_id] = blobs_movement[new_id][-20:]       # magic number Why???? ( get latest movement of centroid )
                 if blob.id != -1:
                     break
+        #--------------------------- if blob buffer of the old one is not the same as the new one ( Not hand ) ----------------
         if blob.id == -1:
             if n+1 < buffer_size:
-                blobs_track(blob,i,n+1)
+                blobs_track(blob,i,n+1)                     # recursive call blobs_track but increse n + 1
             else:
                 new_id = 1
                 for k in range(buffer_size):
-                    if max(old_id[k]or[0])+1 > new_id:
-                        new_id = max(old_id[k])+1
-                blob.set_id(new_id)
-                old_id[0].append(new_id)
-                blobs_movement[new_id] = [blob.centroid,blob.centroid]
+                    if max(old_id[k]or[0])+1 > new_id:                  # if maximum of old id + 1 is higher than new id
+                        new_id = max(old_id[k])+1                       # set new id with the max of old id + 1
+                blob.set_id(new_id)                                     # set blob id with new id
+                old_id[0].append(new_id)                                # add new id to the first array
+                blobs_movement[new_id] = [blob.centroid,blob.centroid]  # set centroid into blob movement
     return blob
 
 def get_approx_pos((cX,cY),(w,h)):
@@ -203,27 +210,30 @@ def get_approx_pos((cX,cY),(w,h)):
 def check_gesture(fps):
     global blobs
     global blobs_movement
-    n_blobs = len(blobs)
+    n_blobs = len(blobs)                # 1 or 2 blobs
     id_hand = []
     for blob in blobs:
         if blob.isHand:
-            id_hand.append(blob.id)
+            id_hand.append(blob.id)     # add blob id into hand id
     n_hand = len(id_hand)
-    if n_hand == 0:
+    if n_hand == 0:                     # can't detect hand
         return "undefined action"
     elif n_hand == 1:
         n_frames = int(fps)+1
-        vector = blobs_movement[id_hand[0]][-n_frames:]
+        print(id_hand[0])
+        print(blobs_movement[id_hand[0]])
+        vector = blobs_movement[id_hand[0]][-n_frames:]                         # get 20 movements or 20 centroids from that id
         weight = {"swipe up":0,"swipe down":0,"swipe left":0,"swipe right":0}
+
         for i in range(len(vector)):
-            if i == 0 :
+            if i == 0 :                                 # at start of loop set first centroid to variable
                 (x0,y0) = vector[0]
             else:
-                (x1,y1) = vector[i]
-                radian = math.atan2(y1-y0,x1-x0)
-                degree = math.degrees(radian)
-                dist = math.hypot(x1-x0,y1-y0)
-                if dist > 8:
+                (x1,y1) = vector[i]                     # set next centroid to second variable
+                radian = math.atan2(y1-y0,x1-x0)        # find radian
+                degree = math.degrees(radian)           # find degree
+                dist = math.hypot(x1-x0,y1-y0)          # find distance
+                if dist > 8:                            # if distance value higher than 8 centimeters
                     if degree>-135 and degree<-45:
                         weight["swipe up"] += 1
                     if degree>45 and degree<135:
@@ -232,10 +242,11 @@ def check_gesture(fps):
                         weight["swipe left"] += 1
                     if degree>-45 and degree<45:
                         weight["swipe right"] += 1
-                (x0,y0) = (x1,y1)
-        ans = "" + max(weight, key=weight.get)
-        p70 = (7/10)*(n_frames-1)
-        if weight[ans] > p70 :
+                (x0,y0) = (x1,y1)                       # replace the second value to the first one
+        ans = "" + max(weight, key=weight.get)          # get the max weight of each 4 directions to use in decision
+        p70 = (7/10)*(n_frames-1)                       # 70% of the movement in all frames
+        if weight[ans] > p70 :                          # if weight is more than p70 return result
+            print(ans)
             return ans
         else :
             return "undefined action"
@@ -259,6 +270,7 @@ def update_old_id():
     global old_id
     for i in range(buffer_size):
         old_id[i] = []
+        #------------------ In the start of program. The code under this comment won't work or blobs_buffer is empty ------------
         for j in range(len(blobs_buffer[i])):
             old_id[i].append(blobs_buffer[i][j].id)
 
