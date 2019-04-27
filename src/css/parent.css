@@ -1,0 +1,13 @@
+#parent {
+    list-style: none;
+    /* width: 100%; */
+    height: 90px;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+
+}
+
+#parent > li {
+    display: inline-block;
+}

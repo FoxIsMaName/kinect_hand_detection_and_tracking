@@ -1,13 +1,4 @@
-/**
- *
- * HTML5 Audio player with playlist
- *
- * Licensed under the MIT license.
- * http://www.opensource.org/licenses/mit-license.php
- *
- * Copyright 2012, Script Tutorials
- * http://www.script-tutorials.com/
- */
+//-----------------------youtube management--------------------------//
  var player;
  var time_update_interval = 0;
  // this function gets called when API is ready to use
@@ -46,8 +37,40 @@
 
      $('#volume-input').val(Math.round(player.getVolume()));
  }
-jQuery(document).ready(function() {
+//-------------------------------------------------------------------//
 
+//---------------------------------------IOT management--------------------------------//
+const APPID = "SmartMirror";
+const KEY = "v5G24M50tfjF6WH";
+const SECRET = "qRSOzLXBUk2Jac5roNozXs6gv";
+const ALIAS = "Board1";
+const TARGET = "LivingRoom"
+var led_status = "off";
+var microgear = Microgear.create({
+  key: KEY,
+  secret: SECRET,
+  alias : ALIAS
+});
+
+microgear.on('message',function(topic,msg) {
+  document.getElementById("data").innerHTML = msg;
+  if(msg=="OFF"){
+    led_status = "off";
+    document.getElementById("data").innerHTML = msg;
+  }else if(msg=="ON"){
+    led_status = "on";
+    document.getElementById("data").innerHTML = msg;
+  }
+});
+
+microgear.on('connected', function() {
+  microgear.setAlias(ALIAS);
+  document.getElementById("data").innerHTML = "Now I am connected with NETPIE...";
+});
+microgear.connect(APPID);
+//------------------------------------------------------------------------------------//
+
+jQuery(document).ready(function() {
     // inner variables
     var song;
     var tracker = $('.tracker');
@@ -110,16 +133,12 @@ jQuery(document).ready(function() {
       var tag = document.getElementsByTagName("section")[page_num];
 
       if( tag.id == "weather"){
-        if( keyCode == 88){
-            alert("444");
-            req = $.ajax({
-              url : '~/sender.py',
-              type : 'POST',
-              data : {status : "ON"},
-              success : function (response){
-                alert("555");
-              }
-            });
+        if( keyCode == 88){ // press x
+          if(led_status == "off"){
+            microgear.chat(ALIAS,"ON");
+          }else if (led_status == "on") {
+            microgear.chat(ALIAS,"OFF");
+          }
         }
       }
       if( tag.id == "youtube"){

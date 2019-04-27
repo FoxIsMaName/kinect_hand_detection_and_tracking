@@ -1,23 +1,28 @@
 <!doctype html>
 <html>
-    <head>
-        <meta charset="utf-8">
+    <head lang="en">
+        <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
         <title>Smart Mirror</title>
 
         <link rel="stylesheet" href="css/reveal.css">
         <link rel="stylesheet" href="css/theme/night.css">
+        <link rel="stylesheet" href="css/parent.css">
 
         <!-- Theme used for syntax highlighting of code -->
         <link rel="stylesheet" href="lib/css/zenburn.css">
 
+
         <!-- Theme used for Audio Playlist -->
         <link rel="stylesheet" href="css/styles.css">
+
 
         <!-- use for music player -->
         <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui-1.8.21.custom.min.js"></script>
+
+        <script src="http://netpie.io/microgear.js"></script>
 
         <!-- <script type="text/javascript" src="js/controller.js"></script> -->
         <script type="text/javascript" src="js/main.js"></script>
@@ -64,34 +69,57 @@
         </style>
     </head>
     <body onload="startTime()" style="background-color: #000000">
+
+        <span id="num"></span>
+        <span id="keyboard"></span>
         <div class="reveal">
             <div class="slides">
-                <section style="height: 100%; padding-top: 25px">
-                    <iframe
-                        frameborder="0" width="70%" height="100%"
-                        src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyDjV6hQ6W2NYpCoB746pWBIA7-MRu_s4p0
-                            &origin=13.8187358,100.5143705
-                            &destination=13.8272572,100.5276682"
-                        allowfullscreen>
-                    </iframe>
+                <section id="map" style="height: 100%; padding-top: 25px">
+                      <iframe
+                          frameborder="0" width="70%" height="100%"
+                          src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyDjV6hQ6W2NYpCoB746pWBIA7-MRu_s4p0
+                              &origin=13.8187358,100.5143705
+                              &destination=13.8272572,100.5276682"
+                          allowfullscreen>
+                      </iframe>
                 </section>
                 <section id="weather" style="height: 100%;">
-                    <div class="row">
-                      <div id="time" style="font-size: 120%;"></div>
-                      <div id="date" style="font-size: 50%;"></div>
-                      <a class="weatherwidget-io" href="https://forecast7.com/en/13d76100d50/bangkok/" data-label_1="BANGKOK" data-label_2="WEATHER" data-theme="original" >BANGKOK WEATHER</a>
-                      <script>
-                      !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
-                      </script>
-                    </div>
+                  <div class="row">
+                    <div id="time" style="font-size: 120%;"></div>
+                    <div id="date" style="font-size: 50%;"></div>
+                    <a class="weatherwidget-io" href="https://forecast7.com/en/13d76100d50/bangkok/" data-label_1="BANGKOK" data-label_2="WEATHER" data-theme="original" >BANGKOK WEATHER</a>
+                    <script>
+                    !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+                    </script>
+                  </div>
+                  <ul id="parent">
+                    <li> <p>Light : </p> </li>
+                    <li>   <div id="data" >_____</div> </li>
+                  </ul>
+
                 </section>
-                <section class="scrollable" tabindex="-1" style="width: 100%;">
+                <section id="news"class="scrollable" tabindex="-1" style="width: 100%;">
                     <div id="news_data" style="text-align: center;width: 90%;margin-left: auto;margin-right: auto;">
                         Loading...
                     </div>
                 </section>
                 <section id="youtube" style="height: 100%; padding-top: 25px">
-                    <div id="video-placeholder"></div>
+                    <!-- <div id="video-placeholder"></div> -->
+                    <iframe
+                        width="90%" height="90%"
+                        data-autoplay
+                        src="https://www.youtube.com/embed/6qTghUgMOeY"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+
+                    <!-- <iframe
+                        data-autoplay
+                        frameborder="0" width="90%" height="90%"
+                        src="http://www.youtube.com/embed/j5HJabRT43I?&autoplay=1"
+                        allowfullscreen>
+                    </iframe> -->
                 </section>
                 <section id="music_player" style="height: 100%;">
 
@@ -103,18 +131,18 @@
                             <div class="artist" style="font-size: 40%"></div>
                             <div class="cover"></div>
                             <div class="controls_player">
-                              <div class="rew"></div>
-                              <div class="play"></div>
-                              <div class="pause"></div>
-                              <div class="fwd"></div>
+                                <div class="rew"></div>
+                                <div class="play"></div>
+                                <div class="pause"></div>
+                                <div class="fwd"></div>
                             </div>
                             <div class="volume"></div>
                             <div class="tracker"></div>
                         </div>
                         <ul class="playlist hidden" style="padding-left: 5%; padding-right: 15%; font-size: 50%">
-                            <li audiourl="01.mp3" cover="music_logo.png" artist="Artist 1">01.mp3</li>
-                            <li audiourl="02.mp3" cover="music_logo.png" artist="Artist 2">02.mp3</li>
-                            <li audiourl="03.mp3" cover="music_logo.png" artist="Artist 3">03.mp3</li>
+                            <li audiourl="New Rules.mp3" cover="music_logo.png" artist="Artist 1">01.mp3</li>
+                            <li audiourl="IDGAF.mp3" cover="music_logo.png" artist="Artist 2">02.mp3</li>
+                            <li audiourl="Blow_your_mine.mp3" cover="music_logo.png" artist="Artist 3">03.mp3</li>
                             <li audiourl="04.mp3" cover="music_logo.png" artist="Artist 4">04.mp3</li>
                             <li audiourl="05.mp3" cover="music_logo.png" artist="Artist 5">05.mp3</li>
                             <li audiourl="06.mp3" cover="music_logo.png" artist="Artist 6">06.mp3</li>
@@ -122,14 +150,6 @@
                         </ul>
 
                     </div>
-                </section>
-                <section style="height: 100%; padding-top: 50px;">
-                    <iframe
-                    src="https://open.spotify.com/embed/album/7wfjL0ZBEycLvXzJmHF45g"
-                    width="400" height="480" frameborder="1"
-                    allowtransparency="true"
-                    allow="encrypted-media">
-                    </iframe>
                 </section>
             </div>
         </div>
@@ -141,6 +161,7 @@
             // More info about config & dependencies:
             // - https://github.com/hakimel/reveal.js#configuration
             // - https://github.com/hakimel/reveal.js#dependencies
+            var page_num = 1;
             Reveal.initialize({
                 dependencies: [
                     { src: 'plugin/markdown/marked.js' },
@@ -159,13 +180,6 @@
             Reveal.addEventListener( 'ready', function( event ) {
                 Reveal.slide(1, 1); //go to slide horizontal / vertical
             } );
-
-            document.onkeydown = function (e) {
-                var keyCode = e.keyCode;
-                if(keyCode == 66) { //b
-                    Reveal.slide(1, 1);
-                }
-            };
 
             function get_news() {
                 var xhttp;
@@ -190,5 +204,7 @@
             get_news();
         </script>
         <script src="https://www.youtube.com/iframe_api"></script>
+        <!-- <script src="youtube.js"></script> -->
+        <!--<script src="spotify.js"></script>-->
     </body>
 </html>
