@@ -1,6 +1,6 @@
-/* ============================================================================================== 
+/* ==============================================================================================
 This copyright notice must be kept untouched in the stylesheet at all times.
-The original version of this stylesheet and the associated (x)html 
+The original version of this stylesheet and the associated (x)html
 is available at http://www.script-tutorials.com/html5-audio-player-with-playlist/
 Copyright (c) Script Tutorials. All rights reserved.
 This stylesheet and the associated (x)html may be modified in any way to fit your requirements.
@@ -79,11 +79,11 @@ header a, a:visited {
 .cover {
     background: transparent url(../data/cover1.jpg) no-repeat scroll center top;
     border-radius: 5px 5px 5px 5px;
-    height: 94px;
+    height: 100px;
     left: 20px;
     position: absolute;
-    top: 20px;
-    width: 94px;
+    top: 15px;
+    width: 100px;
 }
 .controls_player {
     cursor: pointer;
