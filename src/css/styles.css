@@ -100,10 +100,10 @@ header a, a:visited {
     width: 33%;
 }
 .controls_player .play {
-    background-position: -8px -171px;
+    background-position: -11px -171px;
 }
 .controls_player .pause {
-    background-position: -8px -198px;
+    background-position: -11px -198px;
     display: none;
 }
 .controls_player .rew {
