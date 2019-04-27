@@ -14,8 +14,8 @@ from threading import Thread
 
 def show_page():
     #os.system("sleep 5")
-    #os.system("chromium-browser -no-sandbox --app=file:///home/pi/Desktop/kinect_hand_detection_and_tracking/src/index.html")
-    webbrowser.open('file://' + os.path.realpath("/home/scarletdragon/Desktop/kinect_hand_detection_and_tracking_2/src/index.html"))    #   Open Web Application
+    os.system("chromium-browser -no-sandbox --app=file:///home/pi/Desktop/kinect_hand_detection_and_tracking/src/index.html")
+    #webbrowser.open('file://' + os.path.realpath("/home/scarletdragon/Desktop/kinect_hand_detection_and_tracking_2/src/index.html"))    #   Open Web Application
 
 def keymap():
     keyboard = keyboard_con()

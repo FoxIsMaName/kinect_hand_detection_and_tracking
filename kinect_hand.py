@@ -112,9 +112,9 @@ def get_contours(xsize,ysize):
     depth = depth.astype(np.float32)
     depth = cv2.flip(depth, 1)
     depth = cv2.resize(depth,(xsize,ysize))
-    #depth = cv2.GaussianBlur(depth, (5,5), 0)
-    #depth = cv2.erode(depth, None, iterations=1)
-    #depth = cv2.dilate(depth, None, iterations=1)
+    depth = cv2.GaussianBlur(depth, (5,5), 0)
+    depth = cv2.erode(depth, None, iterations=1)
+    depth = cv2.dilate(depth, None, iterations=1)
     min_hand_depth = np.amin(depth)-10
     hand_depth = 80
     max_hand_depth = min_hand_depth + hand_depth
@@ -123,7 +123,7 @@ def get_contours(xsize,ysize):
     (_,BW) = cv2.threshold(depth, max_hand_depth, min_hand_depth, cv2.THRESH_BINARY_INV)
     BW = cv2.convertScaleAbs(BW)
     #BW = cv2.resize(BW,(xsize,ysize))
-    _,cs,_ = cv2.findContours(BW,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    cs,_ = cv2.findContours(BW,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
     cs_f = []
     for i in range(len(cs)):
 ##        if (cv2.contourArea(cs[i]) > 500 and cv2.contourArea(cs[i]) < 2000):
@@ -217,22 +217,24 @@ def check_gesture(fps):
     global blobs
     global blobs_movement
     n_blobs = len(blobs)                # 1 or 2 blobs
+    id_grab = []
     id_hand = []
     for blob in blobs:
         if blob.isHand:
             id_hand.append(blob.id)     # add blob id into hand id
+            id_grab = []
         elif blob.isGrab:
             id_grab.append(blob.id)
             id_hand = []
     n_hand = len(id_hand)
     n_grab = len(id_grab)
 
-    if n_hand == 0:                     # can't detect hand
+    if n_hand == 0 and n_grab == 0:                     # can't detect hand
         return "undefined action"
     elif n_hand == 1:
         n_frames = int(fps)+1
-        print(id_hand[0])
-        print(blobs_movement[id_hand[0]])
+        #print(id_hand[0])
+        #print(blobs_movement[id_hand[0]])
         vector = blobs_movement[id_hand[0]][-n_frames:]                         # get 20 movements or 20 centroids from that id
         weight = {"swipe up":0,"swipe down":0,"swipe left":0,"swipe right":0}
 
